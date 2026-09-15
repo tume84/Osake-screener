@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Osakeseuranta & Screener Prototyyppi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen">
+
+    <!-- Navbar -->
+    <header class="border-b border-slate-800 bg-slate-950 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="bg-emerald-500 p-2 rounded-lg text-slate-950 font-bold">
+                <i data-lucide="trending-up" class="w-6 h-6"></i>
+            </div>
+            <h1 class="text-xl font-bold tracking-wide">StockScreener<span class="text-emerald-400">.io</span></h1>
+        </div>
+        
+        <!-- Search bar -->
+        <div class="relative flex-1 max-w-md">
+            <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+            <input type="text" id="searchInput" placeholder="Hae osaketta tai tikkeriä (esim. AAPL, NOKIA)..." 
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="flex items-center space-x-3 text-sm text-slate-400">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Demo-Data
+            </span>
+        </div>
+    </header>
+
+    <main class="p-6 max-w-7xl mx-auto space-y-6">
+
+        <!-- Controls & Filters Bar -->
+        <section class="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h2 class="font-semibold text-slate-200 flex items-center gap-2">
+                    <i data-lucide="filter" class="w-4 h-4 text-emerald-400"></i> Suodattimet (Screener)
+                </h2>
+                <button id="resetFilters" class="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition-colors">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Nollaa suodattimet
+                </button>
+            </div>
+
+            <!-- Filters Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Sektori</label>
+                    <select id="sectorFilter" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                        <option value="ALL">Kaikki sektorit</option>
+                        <option value="Technology">Teknologia</option>
+                        <option value="Consumer Electronics">Kulutuselektroniikka</option>
+                        <option value="Industrials">Teollisuus</option>
+                        <option value="Financial Services">Rahoitus / Pankit</option>
+                        <option value="Automotive">Autoteollisuus</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Max P/E -luku</label>
+                    <select id="peFilter" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                        <option value="ALL">Kaikki</option>
+                        <option value="15">Alle 15 (Edulliset)</option>
+                        <option value="25">Alle 25</option>
+                        <option value="40">Alle 40</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Min Osinkotuotto (%)</label>
+                    <select id="divFilter" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                        <option value="ALL">Kaikki</option>
+                        <option value="1">Yli 1 %</option>
+                        <option value="3">Yli 3 %</option>
+                        <option value="5">Yli 5 %</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Markkina-arvo</label>
+                    <select id="capFilter" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                        <option value="ALL">Kaikki kokoluokat</option>
+                        <option value="MEGA">Mega Cap (> 200B$)</option>
+                        <option value="LARGE">Large Cap (10B$ - 200B$)</option>
+                        <option value="MID">Mid/Small Cap (< 10B$)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Screener Table -->
+        <section class="bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-xl">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead class="bg-slate-900/80 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-700">
+                        <tr>
+                            <th class="py-3.5 px-4 font-semibold">Tikkeri / Nimi</th>
+                            <th class="py-3.5 px-4 font-semibold">Sektori</th>
+                            <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:text-white" onclick="sortTable('price')">Hinta ⇕</th>
+                            <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:text-white" onclick="sortTable('change')">Muutos % ⇕</th>
+                            <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:text-white" onclick="sortTable('pe')">P/E ⇕</th>
+                            <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:text-white" onclick="sortTable('evEbit')">EV/EBIT ⇕</th>
+                            <th class="py-3.5 px-4 font-semibold text-right cursor-pointer hover:text-white" onclick="sortTable('dividend')">Osinko % ⇕</th>
+                            <th class="py-3.5 px-4 font-semibold text-right">Markkina-arvo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockTableBody" class="divide-y divide-slate-700/50 text-slate-200">
+                        <!-- Rows rendered via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="noResults" class="hidden p-8 text-center text-slate-400 text-sm">
+                Ei hakuehtoja vastaavia osakkeita. Kokeile löysentää suodattimia.
+            </div>
+        </section>
+
+        <!-- Stock Details Modal / Drawer -->
+        <div id="detailsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center p-4 hidden z-50">
+            <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative">
+                <button id="closeModal" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+
+                <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h3 id="modalTicker" class="text-2xl font-bold text-white">---</h3>
+                            <span id="modalSector" class="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full border border-slate-700">---</span>
+                        </div>
+                        <p id="modalName" class="text-slate-400 text-sm">---</p>
+                    </div>
+                    <div class="text-right">
+                        <div id="modalPrice" class="text-2xl font-bold text-white">---</div>
+                        <div id="modalChange" class="text-sm">---</div>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-3 gap-4 bg-slate-950/50 p-4 rounded-lg border border-slate-800/80 text-center">
+                    <div>
+                        <span class="block text-xs text-slate-400">P/E Luku</span>
+                        <span id="modalPE" class="text-lg font-semibold text-slate-200">---</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs text-slate-400">EV / EBIT</span>
+                        <span id="modalEvEbit" class="text-lg font-semibold text-slate-200">---</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs text-slate-400">Osinkotuotto</span>
+                        <span id="modalDiv" class="text-lg font-semibold text-slate-200">---</span>
+                    </div>
+                </div>
+
+                <!-- Simulated Mini Chart Placeholder -->
+                <div class="space-y-2">
+                    <span class="text-xs text-slate-400 font-semibold">Kurssikehitys (Simuloitu 30pv)</span>
+                    <div class="h-32 bg-slate-950/60 border border-slate-800 rounded-lg flex items-end justify-between p-3 gap-1">
+                        <!-- Bars generated via JS -->
+                        <div id="chartBars" class="w-full h-full flex items-end justify-between gap-1"></div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button id="closeModalBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium px-4 py-2 rounded-lg border border-slate-700">
+                        Sulje
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Initial Mock Data
+        const stocksData = [
+            { ticker: "AAPL", name: "Apple Inc.", sector: "Consumer Electronics", price: 224.20, change: 1.45, pe: 33.2, evEbit: 26.5, dividend: 0.45, cap: 3420, capGroup: "MEGA" },
+            { ticker: "MSFT", name: "Microsoft Corp.", sector: "Technology", price: 448.90, change: -0.82, pe: 36.1, evEbit: 28.1, dividend: 0.67, cap: 3330, capGroup: "MEGA" },
+            { ticker: "NOKIA.HE", name: "Nokia Oyj", sector: "Technology", price: 3.85, change: 2.12, pe: 14.8, evEbit: 9.4, dividend: 3.38, cap: 21.5, capGroup: "LARGE" },
+            { ticker: "FORTUM.HE", name: "Fortum Oyj", sector: "Industrials", price: 14.20, change: 0.35, pe: 11.5, evEbit: 8.2, dividend: 7.04, cap: 12.6, capGroup: "LARGE" },
+            { ticker: "TSLA", name: "Tesla Inc.", sector: "Automotive", price: 218.50, change: -3.40, pe: 61.4, evEbit: 48.0, dividend: 0.00, cap: 695, capGroup: "MEGA" },
+            { ticker: "NDA-FI.HE", name: "Nordea Bank Abp", sector: "Financial Services", price: 10.65, change: 0.95, pe: 7.8, evEbit: 6.1, dividend: 8.63, cap: 37.8, capGroup: "LARGE" },
+            { ticker: "NVDA", name: "NVIDIA Corp.", sector: "Technology", price: 119.30, change: 4.15, pe: 72.5, evEbit: 58.2, dividend: 0.03, cap: 2930, capGroup: "MEGA" },
+            { ticker: "VALMT.HE", name: "Valmet Oyj", sector: "Industrials", price: 26.40, change: -1.10, pe: 13.2, evEbit: 9.8, dividend: 5.11, cap: 4.8, capGroup: "MID" }
+        ];
+
+        let filteredStocks = [...stocksData];
+        let currentSortColumn = null;
+        let sortAscending = true;
+
+        // Elements
+        const tableBody = document.getElementById('stockTableBody');
+        const searchInput = document.getElementById('searchInput');
+        const sectorFilter = document.getElementById('sectorFilter');
+        const peFilter = document.getElementById('peFilter');
+        const divFilter = document.getElementById('divFilter');
+        const capFilter = document.getElementById('capFilter');
+        const resetBtn = document.getElementById('resetFilters');
+        const noResults = document.getElementById('noResults');
+
+        // Modal Elements
+        const modal = document.getElementById('detailsModal');
+        const closeModal = document.getElementById('closeModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        // Render Table
+        function renderTable(data) {
+            tableBody.innerHTML = '';
+            if (data.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            }
+            noResults.classList.add('hidden');
+
+            data.forEach(stock => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/80 cursor-pointer transition-colors';
+                tr.onclick = () => openModal(stock);
+
+                const isPositive = stock.change >= 0;
+                const changeClass = isPositive ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                const changeSign = isPositive ? '+' : '';
+
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 font-medium">
+                        <div class="font-bold text-white">${stock.ticker}</div>
+                        <div class="text-xs text-slate-400">${stock.name}</div>
+                    </td>
+                    <td class="py-3.5 px-4 text-slate-300 text-xs">${stock.sector}</td>
+                    <td class="py-3.5 px-4 text-right font-mono text-white">${stock.price.toFixed(2)} €</td>
+                    <td class="py-3.5 px-4 text-right">
+                        <span class="inline-block px-2 py-0.5 text-xs rounded border font-mono ${changeClass}">
+                            ${changeSign}${stock.change.toFixed(2)}%
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4 text-right font-mono text-slate-300">${stock.pe}</td>
+                    <td class="py-3.5 px-4 text-right font-mono text-slate-300">${stock.evEbit}</td>
+                    <td class="py-3.5 px-4 text-right font-mono text-slate-300">${stock.dividend.toFixed(2)} %</td>
+                    <td class="py-3.5 px-4 text-right font-mono text-slate-400 text-xs">${stock.cap >= 1000 ? (stock.cap/1000).toFixed(1) + ' B$' : stock.cap + ' M$'}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Apply Filters
+        function applyFilters() {
+            const search = searchInput.value.toLowerCase();
+            const sector = sectorFilter.value;
+            const maxPE = peFilter.value;
+            const minDiv = divFilter.value;
+            const cap = capFilter.value;
+
+            filteredStocks = stocksData.filter(stock => {
+                const matchesSearch = stock.ticker.toLowerCase().includes(search) || stock.name.toLowerCase().includes(search);
+                const matchesSector = sector === 'ALL' || stock.sector === sector;
+                const matchesPE = maxPE === 'ALL' || stock.pe <= parseFloat(maxPE);
+                const matchesDiv = minDiv === 'ALL' || stock.dividend >= parseFloat(minDiv);
+                const matchesCap = cap === 'ALL' || stock.capGroup === cap;
+
+                return matchesSearch && matchesSector && matchesPE && matchesDiv && matchesCap;
+            });
+
+            renderTable(filteredStocks);
+        }
+
+        // Sort functionality
+        function sortTable(column) {
+            if (currentSortColumn === column) {
+                sortAscending = !sortAscending;
+            } else {
+                currentSortColumn = column;
+                sortAscending = true;
+            }
+
+            filteredStocks.sort((a, b) => {
+                let valA = a[column];
+                let valB = b[column];
+
+                if (valA < valB) return sortAscending ? -1 : 1;
+                if (valA > valB) return sortAscending ? 1 : -1;
+                return 0;
+            });
+
+            renderTable(filteredStocks);
+        }
+
+        // Open Modal
+        function openModal(stock) {
+            document.getElementById('modalTicker').innerText = stock.ticker;
+            document.getElementById('modalName').innerText = stock.name;
+            document.getElementById('modalSector').innerText = stock.sector;
+            document.getElementById('modalPrice').innerText = `${stock.price.toFixed(2)} €`;
+
+            const changeEl = document.getElementById('modalChange');
+            const isPos = stock.change >= 0;
+            changeEl.innerText = `${isPos ? '+' : ''}${stock.change.toFixed(2)}%`;
+            changeEl.className = isPos ? 'text-emerald-400 text-sm font-semibold' : 'text-rose-400 text-sm font-semibold';
+
+            document.getElementById('modalPE').innerText = stock.pe;
+            document.getElementById('modalEvEbit').innerText = stock.evEbit;
+            document.getElementById('modalDiv').innerText = `${stock.dividend}%`;
+
+            // Generate fake mini chart bars
+            const chartBars = document.getElementById('chartBars');
+            chartBars.innerHTML = '';
+            for (let i = 0; i < 20; i++) {
+                const bar = document.createElement('div');
+                const height = Math.floor(Math.random() * 70) + 20;
+                const isGreen = Math.random() > 0.4;
+                bar.style.height = `${height}%`;
+                bar.className = `w-full rounded-t-sm ${isGreen ? 'bg-emerald-500/60' : 'bg-rose-500/60'}`;
+                chartBars.appendChild(bar);
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        // Close Modal
+        function closeModalHandler() {
+            modal.classList.add('hidden');
+        }
+
+        // Event Listeners
+        searchInput.addEventListener('input', applyFilters);
+        sectorFilter.addEventListener('change', applyFilters);
+        peFilter.addEventListener('change', applyFilters);
+        divFilter.addEventListener('change', applyFilters);
+        capFilter.addEventListener('change', applyFilters);
+
+        resetBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            sectorFilter.value = 'ALL';
+            peFilter.value = 'ALL';
+            divFilter.value = 'ALL';
+            capFilter.value = 'ALL';
+            applyFilters();
+        });
+
+        closeModal.addEventListener('click', closeModalHandler);
+        closeModalBtn.addEventListener('click', closeModalHandler);
+
+        // Initial Render
+        renderTable(stocksData);
+        lucide.createIcons();
+    </script>
+</body>
+</html>
