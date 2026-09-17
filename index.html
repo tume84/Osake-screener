@@ -26,8 +26,8 @@
         </div>
 
         <div class="flex items-center space-x-3 text-sm text-slate-400">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Demo-Data
+            <span id="statusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Ladataan dataa...
             </span>
         </div>
     </header>
@@ -158,7 +158,6 @@
                 <div class="space-y-2">
                     <span class="text-xs text-slate-400 font-semibold">Kurssikehitys (Simuloitu 30pv)</span>
                     <div class="h-32 bg-slate-950/60 border border-slate-800 rounded-lg flex items-end justify-between p-3 gap-1">
-                        <!-- Bars generated via JS -->
                         <div id="chartBars" class="w-full h-full flex items-end justify-between gap-1"></div>
                     </div>
                 </div>
@@ -174,19 +173,11 @@
     </main>
 
     <script>
-        // Initial Mock Data
-        const stocksData = [
-            { ticker: "AAPL", name: "Apple Inc.", sector: "Consumer Electronics", price: 224.20, change: 1.45, pe: 33.2, evEbit: 26.5, dividend: 0.45, cap: 3420, capGroup: "MEGA" },
-            { ticker: "MSFT", name: "Microsoft Corp.", sector: "Technology", price: 448.90, change: -0.82, pe: 36.1, evEbit: 28.1, dividend: 0.67, cap: 3330, capGroup: "MEGA" },
-            { ticker: "NOKIA.HE", name: "Nokia Oyj", sector: "Technology", price: 3.85, change: 2.12, pe: 14.8, evEbit: 9.4, dividend: 3.38, cap: 21.5, capGroup: "LARGE" },
-            { ticker: "FORTUM.HE", name: "Fortum Oyj", sector: "Industrials", price: 14.20, change: 0.35, pe: 11.5, evEbit: 8.2, dividend: 7.04, cap: 12.6, capGroup: "LARGE" },
-            { ticker: "TSLA", name: "Tesla Inc.", sector: "Automotive", price: 218.50, change: -3.40, pe: 61.4, evEbit: 48.0, dividend: 0.00, cap: 695, capGroup: "MEGA" },
-            { ticker: "NDA-FI.HE", name: "Nordea Bank Abp", sector: "Financial Services", price: 10.65, change: 0.95, pe: 7.8, evEbit: 6.1, dividend: 8.63, cap: 37.8, capGroup: "LARGE" },
-            { ticker: "NVDA", name: "NVIDIA Corp.", sector: "Technology", price: 119.30, change: 4.15, pe: 72.5, evEbit: 58.2, dividend: 0.03, cap: 2930, capGroup: "MEGA" },
-            { ticker: "VALMT.HE", name: "Valmet Oyj", sector: "Industrials", price: 26.40, change: -1.10, pe: 13.2, evEbit: 9.8, dividend: 5.11, cap: 4.8, capGroup: "MID" }
-        ];
+        // Tähän tulee sinun Render-backendisi julkinen osoite:
+        const API_URL = "https://osake-screener.onrender.com/api/stocks";
 
-        let filteredStocks = [...stocksData];
+        let stocksData = [];
+        let filteredStocks = [];
         let currentSortColumn = null;
         let sortAscending = true;
 
@@ -199,11 +190,31 @@
         const capFilter = document.getElementById('capFilter');
         const resetBtn = document.getElementById('resetFilters');
         const noResults = document.getElementById('noResults');
+        const statusBadge = document.getElementById('statusBadge');
 
         // Modal Elements
         const modal = document.getElementById('detailsModal');
         const closeModal = document.getElementById('closeModal');
         const closeModalBtn = document.getElementById('closeModalBtn');
+
+        // Fetch Live Data from Python API
+        async function fetchStockData() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("Verkkovirhe");
+                stocksData = await response.json();
+                filteredStocks = [...stocksData];
+                
+                statusBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Reaaliaikainen API Data';
+                
+                renderTable(filteredStocks);
+            } catch (error) {
+                console.error("Virhe haettaessa dataa:", error);
+                statusBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
+                statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-400"></span> Virhe yhteydessä API:in';
+            }
+        }
 
         // Render Table
         function renderTable(data) {
@@ -302,7 +313,6 @@
             document.getElementById('modalEvEbit').innerText = stock.evEbit;
             document.getElementById('modalDiv').innerText = `${stock.dividend}%`;
 
-            // Generate fake mini chart bars
             const chartBars = document.getElementById('chartBars');
             chartBars.innerHTML = '';
             for (let i = 0; i < 20; i++) {
@@ -341,8 +351,8 @@
         closeModal.addEventListener('click', closeModalHandler);
         closeModalBtn.addEventListener('click', closeModalHandler);
 
-        // Initial Render
-        renderTable(stocksData);
+        // Fetch Initial Data
+        fetchStockData();
         lucide.createIcons();
     </script>
 </body>
